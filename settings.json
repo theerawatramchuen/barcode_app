@@ -1,0 +1,8 @@
+{
+  "barcode_width_mm": 22,
+  "barcode_height_mm": 12,
+  "per_page": 20,
+  "total_qty": 50,
+  "font_size_pt": 8,
+  "font_offset_mm": 1.0
+}
