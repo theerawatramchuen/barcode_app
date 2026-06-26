@@ -114,7 +114,8 @@ def generate_barcode_image(product_name, price_str, barcode_str,
     line1 = product_name
     line2 = f"{price_str}.-"
 
-    font_px = max(12, int(text_h * 0.40))   # each line ~40% of text area
+    font_px = max(12, int(text_h * 0.50))   # each line ~40% of text area
+    #font_px = 24
     font    = find_font(font_px)
 
     # Centre line 1
