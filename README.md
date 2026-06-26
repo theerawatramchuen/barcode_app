@@ -1,19 +1,31 @@
 # Barcode Generator — A4 PDF for Laser Printer
 
 A local web application that generates Code-128 barcodes laid out on A4 PDF pages,
-optimised for laser printing.
+optimised for laser printing. Supports Thai and English product names.
+
+---
 
 ## Requirements
 
 Python 3.8+
 
-## Install dependencies
+## Install Dependencies
 
 ```bash
-pip install flask python-barcode reportlab pillow pandas chardet
+pip install flask python-barcode reportlab pillow pandas openpyxl chardet
 ```
 
-> **Note:** `chardet` is optional but recommended — it auto-detects the encoding of `products.csv` (needed for Thai / non-UTF-8 files). The app works without it using a built-in fallback chain.
+| Package | Purpose |
+|---|---|
+| `flask` | Web server |
+| `python-barcode` | Code-128 barcode generation |
+| `reportlab` | PDF creation |
+| `pillow` | Image compositing (label layout) |
+| `pandas` | Reading products.xlsx |
+| `openpyxl` | Excel (.xlsx) file engine |
+| `chardet` | Optional — auto-detect file encoding |
+
+---
 
 ## Run
 
@@ -23,46 +35,106 @@ python app.py
 
 Then open your browser at: **http://localhost:5000**
 
+---
+
 ## Usage
 
-1. **Select a product** from the table (click any row).
-2. **Adjust settings** — barcode size (width × height in mm), barcodes per page, total quantity.
-3. **Click Preview** to see the first-page layout before printing.
-4. **Click Generate PDF** to download the ready-to-print PDF file.
+1. **Select a product** from the table — click any row to highlight it.
+2. **Adjust print settings** in the left panel (size, quantity, font, offset).
+3. **Click Preview** to verify the label layout on a simulated A4 page.
+4. **Click Generate PDF** to download the print-ready PDF file.
 
-## Files
+---
+
+## Label Format
+
+Each barcode label is a 3-line composite image:
+
+```
+┌─────────────────────────┐
+│      Product Name       │  ← Column A
+│        Price.-          │  ← Column C  (e.g. 16.-)
+│  ▐▌▐▐▌▌▐▐▌▌▐▌▌▐▌▐▐▌▐▌▐ │  ← Code-128 barcode
+│     8530000001148       │  ← Column B  (barcode number)
+└─────────────────────────┘
+```
+
+- Top 30% of the label — product name and price
+- Bottom 70% of the label — barcode bars and number
+
+---
+
+## File Structure
 
 ```
 barcode_app/
-├── app.py          ← Flask server
-├── products.csv    ← Product list (Column A = name, Column B = barcode number)
+├── app.py              ← Flask server & barcode/PDF logic
+├── products.xlsx       ← Product data (see format below)
+├── settings.json       ← Default print settings
 ├── templates/
-│   └── index.html  ← UI
+│   └── index.html      ← Web UI
 └── README.md
 ```
 
-## CSV Format
+---
 
-The `products.csv` file has no header row. Column A is the product name,
-Column B is the barcode number (used as Code-128 barcode data).
+## products.xlsx Format
 
-Example:
+No header row. Three columns:
+
+| Column | Field | Example |
+|---|---|---|
+| A | Product name (Thai or English) | สันรูด 17 มิล |
+| B | Barcode number (Code-128) | 8530000001148 |
+| C | Unit price | 16 |
+
+The price is displayed on the label as `16.-`
+
+---
+
+## settings.json
+
+All default print settings are stored in `settings.json` and loaded on startup.
+Edit this file to change the defaults without touching any code.
+
+```json
+{
+  "barcode_width_mm":  40,
+  "barcode_height_mm": 20,
+  "per_page":          20,
+  "total_qty":         50,
+  "font_size_pt":       8,
+  "font_offset_mm":     0.0
+}
 ```
-A4 Paper,1234567894
-Notebook,1234567895
-Pencil,1234567896
-```
 
-## Defaults
-
-| Setting | Default |
+| Key | Description |
 |---|---|
-| Barcode width | 22 mm |
-| Barcode height | 12 mm |
-| Per page | 20 |
-| Total qty | 50 |
-| Font Size | 8 |
-| Font Offset | 1.0 |
+| `barcode_width_mm` | Label width in millimetres |
+| `barcode_height_mm` | Label height in millimetres |
+| `per_page` | Barcodes per page (auto-capped by label size) |
+| `total_qty` | Total number of labels to generate |
+| `font_size_pt` | Barcode number font size in points |
+| `font_offset_mm` | Vertical shift of barcode number text (+ = down, − = up) |
 
-The app automatically caps "per page" to however many barcodes fit the A4 page
-given your chosen barcode size and a 10 mm margin / 3 mm gap.
+---
+
+## Page Layout
+
+- **Margin:** 10 mm on all sides
+- **Gap between labels:** 3 mm
+- **Page size:** A4 (210 × 297 mm)
+- The app auto-calculates how many labels fit per page and caps the *Per Page* setting accordingly.
+
+---
+
+## Thai Font Support
+
+The app automatically searches for a Thai-compatible font in common locations:
+
+- Windows: `THSarabunNew.ttf`, `Tahoma.ttf`, `Arial.ttf`
+- Linux: `Sarabun-Regular.ttf`, `TlwgTypo.ttf`
+- macOS: `Tahoma.ttf`, `Arial Unicode.ttf`
+
+If none are found, it falls back to the system default font (Latin characters only).
+For best Thai rendering on Windows, ensure **TH Sarabun New** is installed.
