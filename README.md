@@ -57,10 +57,12 @@ Pencil,1234567896
 
 | Setting | Default |
 |---|---|
-| Barcode width | 40 mm |
-| Barcode height | 20 mm |
+| Barcode width | 22 mm |
+| Barcode height | 12 mm |
 | Per page | 20 |
 | Total qty | 50 |
+| Font Size | 8 |
+| Font Offset | 1.0 |
 
 The app automatically caps "per page" to however many barcodes fit the A4 page
 given your chosen barcode size and a 10 mm margin / 3 mm gap.
