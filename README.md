@@ -99,12 +99,12 @@ Edit this file to change the defaults without touching any code.
 
 ```json
 {
-  "barcode_width_mm":  22,
-  "barcode_height_mm": 12,
+  "barcode_width_mm":  40,
+  "barcode_height_mm": 20,
   "per_page":          20,
   "total_qty":         50,
   "font_size_pt":       8,
-  "font_offset_mm":     1.0
+  "font_offset_mm":     0.0
 }
 ```
 

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Products</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#333;min-height:100vh}
+
+    header{background:#1a237e;color:white;padding:14px 28px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+    header h1{font-size:1.3rem;font-weight:600}
+    header p{font-size:.78rem;opacity:.7;margin-top:2px}
+    .nav-btn{margin-left:auto;padding:7px 16px;background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3);border-radius:6px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;gap:6px;text-decoration:none;transition:background .2s}
+    .nav-btn:hover{background:rgba(255,255,255,.25)}
+
+    .page{max-width:1200px;margin:0 auto;padding:24px}
+
+    .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+    .search-box{position:relative;flex:1;min-width:200px}
+    .search-box input{width:100%;padding:9px 10px 9px 34px;border:1px solid #ddd;border-radius:6px;font-size:.88rem}
+    .search-box input:focus{outline:none;border-color:#3949ab;box-shadow:0 0 0 3px rgba(57,73,171,.1)}
+    .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#aaa;pointer-events:none}
+
+    .btn{padding:9px 16px;border:none;border-radius:7px;font-size:.88rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .18s}
+    .btn-add{background:#1a237e;color:white}
+    .btn-add:hover{background:#283593}
+    .btn-import{background:#e8eaf6;color:#3949ab;border:1px solid #c5cae9}
+    .btn-import:hover{background:#c5cae9}
+    .btn-export{background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9}
+    .btn-export:hover{background:#c8e6c9}
+
+    /* Table */
+    .card{background:white;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.1);overflow:hidden}
+    .table-scroll{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:.85rem}
+    thead th{background:#e8eaf6;color:#1a237e;font-weight:600;padding:10px 12px;text-align:left;white-space:nowrap;position:sticky;top:0}
+    thead th.col-actions{text-align:center;width:100px}
+    tbody tr{border-bottom:1px solid #f0f0f0;transition:background .12s}
+    tbody tr:hover{background:#fafafa}
+    tbody td{padding:8px 12px;vertical-align:middle}
+    tbody td input{width:100%;border:1px solid transparent;border-radius:4px;padding:4px 6px;font-size:.85rem;background:transparent;font-family:inherit}
+    tbody td input:focus{border-color:#3949ab;background:white;outline:none;box-shadow:0 0 0 2px rgba(57,73,171,.1)}
+    .col-actions{text-align:center;white-space:nowrap}
+    .row-num{color:#aaa;font-size:.78rem;text-align:center;width:36px}
+
+    .icon-btn{background:none;border:none;cursor:pointer;padding:5px;border-radius:4px;display:inline-flex;align-items:center;transition:background .15s}
+    .icon-btn.del:hover{background:#ffebee;color:#c62828}
+    .icon-btn.save-row:hover{background:#e8f5e9;color:#2e7d32}
+
+    .empty-state{text-align:center;padding:48px;color:#bbb}
+    .empty-state svg{margin-bottom:12px;opacity:.3}
+    .empty-state p{font-size:.95rem}
+
+    .count-badge{background:#e8eaf6;color:#3949ab;border-radius:12px;padding:2px 10px;font-size:.78rem;font-weight:600}
+
+    /* Modal */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:none;align-items:center;justify-content:center}
+    .modal-overlay.open{display:flex}
+    .modal{background:white;border-radius:12px;padding:28px;width:520px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+    .modal h3{font-size:1.05rem;color:#1a237e;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+    .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .mfield label{display:block;font-size:.78rem;color:#666;margin-bottom:4px;font-weight:500}
+    .mfield input{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:.9rem}
+    .mfield input:focus{outline:none;border-color:#3949ab;box-shadow:0 0 0 3px rgba(57,73,171,.1)}
+    .mfield.full{grid-column:1/-1}
+    .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+    .btn-cancel{background:#f5f5f5;color:#555;border:1px solid #ddd}
+    .btn-cancel:hover{background:#eee}
+    .btn-confirm{background:#1a237e;color:white}
+    .btn-confirm:hover{background:#283593}
+
+    .toast{position:fixed;bottom:22px;right:22px;background:#323232;color:white;padding:9px 16px;border-radius:8px;font-size:.85rem;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;z-index:999}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .toast.error{background:#c62828}
+    .toast.success{background:#2e7d32}
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
+    <rect x="2" y="6" width="3" height="20" fill="white"/>
+    <rect x="7" y="6" width="1.5" height="20" fill="white"/>
+    <rect x="10" y="6" width="3" height="20" fill="white"/>
+    <rect x="15" y="6" width="1.5" height="20" fill="white"/>
+    <rect x="18" y="6" width="2" height="20" fill="white"/>
+    <rect x="22" y="6" width="3" height="20" fill="white"/>
+    <rect x="27" y="6" width="1.5" height="20" fill="white"/>
+  </svg>
+  <div>
+    <h1>Manage Products</h1>
+    <p>Add, edit, and delete product records</p>
+  </div>
+  <a href="/" class="nav-btn">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to Generator
+  </a>
+</header>
+
+<div class="page">
+
+  <div class="toolbar">
+    <div class="search-box">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search any field…" oninput="filterRows()">
+    </div>
+    <span class="count-badge" id="countBadge">0 products</span>
+    <button class="btn btn-import" onclick="document.getElementById('importFile').click()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import XLSX
+    </button>
+    <input type="file" id="importFile" accept=".xlsx" style="display:none" onchange="importXlsx(event)">
+    <button class="btn btn-export" onclick="exportXlsx()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export XLSX
+    </button>
+    <button class="btn btn-add" onclick="openAddModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Product
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="row-num">#</th>
+            <th>Product Name</th>
+            <th>Barcode</th>
+            <th>Price</th>
+            <th>Type</th>
+            <th>Group</th>
+            <th>Comment</th>
+            <th class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="productTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add / Edit Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Add Product
+    </h3>
+    <div class="modal-grid">
+      <div class="mfield full">
+        <label>Product Name *</label>
+        <input type="text" id="mName" placeholder="e.g. สันรูด 17 มิล">
+      </div>
+      <div class="mfield">
+        <label>Barcode *</label>
+        <input type="text" id="mBarcode" placeholder="e.g. 8530000001148">
+      </div>
+      <div class="mfield">
+        <label>Price</label>
+        <input type="text" id="mPrice" placeholder="e.g. 16">
+      </div>
+      <div class="mfield">
+        <label>Type</label>
+        <input type="text" id="mType" placeholder="e.g. Stationery">
+      </div>
+      <div class="mfield">
+        <label>Group</label>
+        <input type="text" id="mGroup" placeholder="e.g. Office">
+      </div>
+      <div class="mfield full">
+        <label>Comment</label>
+        <input type="text" id="mComment" placeholder="Optional notes">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-confirm" id="modalConfirm" onclick="confirmModal()">Add Product</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let products = [];
+let editIdx  = null;  // null = adding, number = editing row index
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadProducts() {
+  const r = await fetch('/api/products');
+  products = await r.json();
+  renderTable();
+}
+
+// ── Render table ──────────────────────────────────────────────────────────────
+function renderTable() {
+  const q  = (document.getElementById('searchInput').value || '').toLowerCase();
+  const tb = document.getElementById('productTable');
+  tb.innerHTML = '';
+  let shown = 0;
+
+  products.forEach((p, i) => {
+    const txt = Object.values(p).join(' ').toLowerCase();
+    if (q && !txt.includes(q)) return;
+    shown++;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="row-num">${i+1}</td>
+      <td><input value="${esc(p.name)}"    onchange="inlineUpdate(${i},'name',this.value)"    placeholder="Name"></td>
+      <td><input value="${esc(p.barcode)}" onchange="inlineUpdate(${i},'barcode',this.value)" placeholder="Barcode" style="font-family:monospace"></td>
+      <td><input value="${esc(p.price)}"   onchange="inlineUpdate(${i},'price',this.value)"   placeholder="Price" style="width:70px"></td>
+      <td><input value="${esc(p.type)}"    onchange="inlineUpdate(${i},'type',this.value)"    placeholder="Type"></td>
+      <td><input value="${esc(p.group)}"   onchange="inlineUpdate(${i},'group',this.value)"   placeholder="Group"></td>
+      <td><input value="${esc(p.comment)}" onchange="inlineUpdate(${i},'comment',this.value)" placeholder="Comment"></td>
+      <td class="col-actions">
+        <button class="icon-btn" title="Edit" onclick="openEditModal(${i})">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3949ab" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="icon-btn del" title="Delete" onclick="deleteRow(${i})">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e53935" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </td>`;
+    tb.appendChild(tr);
+  });
+
+  if (shown === 0) {
+    const tr = tb.insertRow();
+    const td = tr.insertCell();
+    td.colSpan = 8;
+    td.innerHTML = `<div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="2" height="18"/><rect x="14" y="3" width="4" height="18"/></svg>
+      <p>${products.length === 0 ? 'No products yet — click <strong>Add Product</strong> to get started.' : 'No results match your search.'}</p>
+    </div>`;
+  }
+  document.getElementById('countBadge').textContent =
+    `${products.length} product${products.length !== 1 ? 's' : ''}`;
+}
+
+function filterRows() { renderTable(); }
+
+function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+// ── Inline update ─────────────────────────────────────────────────────────────
+async function inlineUpdate(idx, field, value) {
+  products[idx][field] = value;
+  try {
+    await fetch(`/api/products/${idx}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({[field]: value})
+    });
+    showToast('Saved', 'success');
+  } catch { showToast('Save failed', 'error'); }
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function deleteRow(idx) {
+  if (!confirm(`Delete "${products[idx].name}"?`)) return;
+  try {
+    const r = await fetch(`/api/products/${idx}`, {method:'DELETE'});
+    if (!r.ok) throw new Error();
+    await loadProducts();
+    showToast('Product deleted', 'success');
+  } catch { showToast('Delete failed', 'error'); }
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openAddModal() {
+  editIdx = null;
+  ['mName','mBarcode','mPrice','mType','mGroup','mComment'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('modalTitle').lastChild.textContent = ' Add Product';
+  document.getElementById('modalConfirm').textContent = 'Add Product';
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('mName').focus();
+}
+
+function openEditModal(idx) {
+  editIdx = idx;
+  const p = products[idx];
+  document.getElementById('mName').value    = p.name    || '';
+  document.getElementById('mBarcode').value = p.barcode || '';
+  document.getElementById('mPrice').value   = p.price   || '';
+  document.getElementById('mType').value    = p.type    || '';
+  document.getElementById('mGroup').value   = p.group   || '';
+  document.getElementById('mComment').value = p.comment || '';
+  document.getElementById('modalTitle').lastChild.textContent = ' Edit Product';
+  document.getElementById('modalConfirm').textContent = 'Save Changes';
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('mName').focus();
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+async function confirmModal() {
+  const name = document.getElementById('mName').value.trim();
+  const code = document.getElementById('mBarcode').value.trim();
+  if (!name || !code) { showToast('Name and Barcode are required', 'error'); return; }
+
+  const row = {
+    name:    name,
+    barcode: code,
+    price:   document.getElementById('mPrice').value.trim(),
+    type:    document.getElementById('mType').value.trim(),
+    group:   document.getElementById('mGroup').value.trim(),
+    comment: document.getElementById('mComment').value.trim(),
+  };
+
+  try {
+    if (editIdx === null) {
+      const r = await fetch('/api/products', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(row)
+      });
+      if (!r.ok) throw new Error();
+      showToast('Product added', 'success');
+    } else {
+      const r = await fetch(`/api/products/${editIdx}`, {
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(row)
+      });
+      if (!r.ok) throw new Error();
+      showToast('Product updated', 'success');
+    }
+    closeModal();
+    await loadProducts();
+  } catch { showToast('Operation failed', 'error'); }
+}
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ── Import XLSX ───────────────────────────────────────────────────────────────
+async function importXlsx(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  // Read client-side with SheetJS via CDN-style dynamic import fallback
+  // We'll POST the file to a server endpoint instead (simpler, no CDN needed)
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/products/import', {method:'POST', body: fd});
+    if (!r.ok) throw new Error((await r.json()).error || 'Import failed');
+    const data = await r.json();
+    await loadProducts();
+    showToast(`Imported ${data.count} products`, 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+  evt.target.value = '';
+}
+
+// ── Export XLSX (download products.xlsx from server) ─────────────────────────
+function exportXlsx() {
+  window.location = '/api/products/export';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let _tt;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show'+(type?' '+type:'');
+  clearTimeout(_tt); _tt = setTimeout(()=>t.className='toast', 2800);
+}
+
+loadProducts();
+</script>
+</body>
+</html>
